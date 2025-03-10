@@ -1,9 +1,9 @@
 [package]
-name = "eframe_template"
+name = "matmodel_prac"
 version = "0.1.0"
-authors = ["Emil Ernerfeldt <emil.ernerfeldt@gmail.com>"]
+authors = ["sitandr"]
 edition = "2021"
-include = ["LICENSE-APACHE", "LICENSE-MIT", "**/*.rs", "Cargo.toml"]
+include = ["LICENSE-APACHE", "LICENSE-MIT", "**/*.rs", "Cargo.toml", "Cargo.lock"]
 rust-version = "1.81"
 
 [package.metadata.docs.rs]
@@ -11,18 +11,20 @@ all-features = true
 targets = ["x86_64-unknown-linux-gnu", "wasm32-unknown-unknown"]
 
 [dependencies]
-egui = "0.30"
-eframe = { version = "0.30", default-features = false, features = [
-    "accesskit",     # Make egui compatible with screen readers. NOTE: adds a lot of dependencies.
+egui = "0.31"
+eframe = { version = "0.31", default-features = false, features = [
+    #"accesskit",     # Make egui compatible with screen readers. NOTE: adds a lot of dependencies.
     "default_fonts", # Embed the default egui fonts.
     "glow",          # Use the glow rendering backend. Alternative: "wgpu".
-    "persistence",   # Enable restoring app state when restarting the app.
-    "wayland",       # To support Linux (and CI)
+    #"persistence",   # Enable restoring app state when restarting the app.
+    #"wayland",       # To support Linux (and CI)
 ] }
-log = "0.4"
+ordered-float = "5.0.0"
+itertools = "0.14.0"
+#log = "0.4"
 
 # You only need serde if you want app persistence:
-serde = { version = "1", features = ["derive"] }
+# serde = { version = "1", features = ["derive"] }
 
 # native:
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
@@ -35,6 +37,7 @@ web-sys = "0.3.70"           # to access the DOM (to hide the loading text)
 
 [profile.release]
 opt-level = 2 # fast and small wasm
+lto = true
 
 # Optimize all dependencies even in debug builds:
 [profile.dev.package."*"]
