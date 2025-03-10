@@ -32,10 +32,33 @@ pub enum EquationType {
     Heat
 }
 
+
+
 #[derive(Clone, Copy)]
 struct Geometry {
     width: usize,
     height: usize,
+}
+
+pub struct FluxSetup {
+    pub flux: f64,
+    pub alpha: f64,
+    pub beta: f64,
+    pub left: f64,
+    pub right: f64,
+    pub up: f64,
+    pub down: f64,
+}
+
+impl FluxSetup {
+    fn get_flux(&self, dir: &Neighbor) -> f64 {
+        self.flux * match dir {
+            Neighbor::Left => self.right,
+            Neighbor::Right => self.left,
+            Neighbor::Upper => self.down,
+            Neighbor::Bottom => self.up,
+        }
+    }
 }
 
 impl Geometry {
@@ -51,6 +74,19 @@ impl Geometry {
             (_, last) if last == last_y => Some(Neighbor::Upper),
             _ => None,
         }
+    }
+
+    fn is_angle(&self, i: usize) -> bool {
+        let (x, y) = self.index2coord(i);
+        let last_x = self.width - 1;
+        let last_y = self.height - 1;
+
+        let cond1 = ((last_x - x) <= 1) as u8;
+        let cond2 = ((last_y - y) <= 1) as u8;
+        let cond3 = (x <= 1) as u8;
+        let cond4 = (y <= 1) as u8;
+
+        cond1 + cond2 + cond3 + cond4 >= 2
     }
     
     #[inline]
@@ -77,8 +113,12 @@ pub struct Modelling {
     prev_data: Vec<f64>,
     texture: Option<egui::TextureHandle>,
     buffer: Vec<f64>,
-    c0: f64,
-    eq_type: EquationType
+    pub c0: f64,
+    pub eq_type: EquationType,
+    pub flux: FluxSetup,
+    pub automax: bool,
+    pub max: f64,
+    pub min: f64
 }
 
 impl Modelling {
@@ -94,12 +134,15 @@ impl Modelling {
             prev_data,
             buffer,
             c0: 1.0,
+            max: 1.0,
+            min: -1.0,
             eq_type: EquationType::Heat,
+            flux: FluxSetup { flux: 0.5, alpha: 0.5, beta: 0.0, left: 1.0, right: -1.0, up: 0.0, down: 0.0},
             texture: None
         }
     }
 
-    pub fn step(&mut self, n: usize, flux: f64, dx: f64, dt: f64) {
+    pub fn step(&mut self, n: usize, dx: f64, dt: f64) {
         for _ in 0..n {
             self.buffer.clear();
             for (i, u) in self.data.iter().enumerate() {
@@ -109,25 +152,31 @@ impl Modelling {
                 let res = if is_edge {
                     *u
                 } else {
-                    *u + dt * self.laplace(i, *u, dx)
+                    *u + dt * self.c0 * self.laplace(i, *u, dx)
                 };
                 self.buffer.push(res);
             }
 
             std::mem::swap(&mut self.data, &mut self.prev_data);
             std::mem::swap(&mut self.buffer, &mut self.data);
-            let alpha = 0.5;
-            let beta = 0.5;
             for (i, t) in self.geometry.ind_iter().filter_map(|i| self.geometry.edge_type(i).map(|t| (i, t))) {
-                if alpha == 0.0 {
+                let flux = self.flux.get_flux(&t);
+                if self.flux.alpha == 0.0 {
                     self.data[i] = flux;
                 } else {
-                    let av = self.data[i] + t.get_v(self, i);
-                    let delta = (flux - beta * av) / alpha * dx;
-                    println!("{av} {delta}");
+                    /*if self.geometry.is_angle(i) {
+                        continue;
+                    }*/
+                    let prev = t.get_v(&self, t.get_i(&self.geometry, i));
+                    // let av = self.data[i] + t.get_v(self, i) + self.data[prev];
+                    let delta = (flux - self.flux.beta * prev) / self.flux.alpha * dx;
+                    // println!("{av} {delta}");
                     // panic!();
-                    self.data[i] = av + delta;
-                    self.data[t.get_i(&self.geometry, i)] = av - delta;
+                    self.data[i] = prev + 2.0*delta;
+                    // self.data[t.get_i(&self.geometry, i)] = av;
+                    // self.data[prev] = av - delta;
+                    
+                    // self.data[t.get_i(&self.geometry, t.get_i(&self.geometry, i))] = av - delta;
                 }
             }
         }
@@ -140,9 +189,14 @@ impl Modelling {
     }
 
     pub fn display(&mut self, ui: &mut egui::Ui) {
-        let (min, max) = self.data.iter().copied().minmax_by(f64::total_cmp).into_option().unwrap();
-        let max = if max < 1.0 {1.0} else {max};
-        let min = if min > 0.0 {0.0} else {min};
+        let (min, max);
+        if self.automax {
+            (min, max) = self.data.iter().copied().minmax_by(f64::total_cmp).into_option().unwrap();
+        } 
+        else{
+            max = self.max;//if max < 1.0 {1.0} else {max};
+            min = self.min;//if min > 0.0 {0.0} else {min};
+        }
         let texture: &mut egui::TextureHandle = self.texture.get_or_insert_with(|| {
             // Load the texture only once.
             ui.ctx().load_texture(
@@ -151,7 +205,7 @@ impl Modelling {
                 Default::default()
             )
         });
-        let text: Vec<Color32> = self.data.iter().map(|v: &f64| Color32::from_gray(((v - min) / (max - min + 0.001) * 255.0) as u8)).collect();
+        let text: Vec<Color32> = self.data.iter().map(|v: &f64| Color32::from_gray(((v.clamp(min, max) - min) / (max - min + 0.001) * 255.0) as u8)).collect();
         texture.set(ColorImage{pixels: text, size: [self.geometry.width, self.geometry.height] }, TextureOptions::NEAREST);
 
         // Show the image:

@@ -5,8 +5,6 @@ use crate::model::Modelling;
 // #[derive(serde::Deserialize, serde::Serialize)]
 // #[serde(default)] // if we add new fields, give them default values when deserializing old state
 pub struct TemplateApp {
-    // Example stuff:
-    label: String,
     model: Modelling,
     dx: f64,
     dt: f64,
@@ -16,8 +14,6 @@ pub struct TemplateApp {
 impl Default for TemplateApp {
     fn default() -> Self {
         Self {
-            // Example stuff:
-            label: "Hello World!".to_owned(),
             dx: 0.1,
             dt: 0.05,
             model: Modelling::init(50, 50)
@@ -73,23 +69,31 @@ impl eframe::App for TemplateApp {
 
         egui::CentralPanel::default().show(ctx, |ui| {
             // The central panel the region left after adding TopPanel's and SidePanel's
-            ui.heading("eframe template");
+            ui.heading("Simpel modelling");
 
-            ui.horizontal(|ui| {
-                ui.label("Write something: ");
-                ui.text_edit_singleline(&mut self.label);
-            });
+            ui.add(egui::Slider::new(&mut self.dx, 0.0001..=1.0).logarithmic(true).text("dx"));
+            ui.add(egui::Slider::new(&mut self.dt, 0.0001..=1.0).logarithmic(true).text("dt"));
+            ui.separator();
+            ui.add(egui::Slider::new(&mut self.model.flux.alpha, 0.0001..=1.0).logarithmic(true).text("alpha"));
+            ui.add(egui::Slider::new(&mut self.model.flux.beta, 0.0001..=1.0).logarithmic(true).text("beta"));
+            ui.add(egui::Slider::new(&mut self.model.flux.flux, 0.0001..=1.0).logarithmic(true).text("flux"));
+            ui.add(egui::Slider::new(&mut self.model.flux.up, -1.0..=1.0).step_by(0.5).text("top side flux multi"));
+            ui.add(egui::Slider::new(&mut self.model.flux.down, -1.0..=1.0).step_by(0.5).text("bottom side flux multi"));
+            ui.add(egui::Slider::new(&mut self.model.flux.left, -1.0..=1.0).step_by(0.5).text("left side flux multi"));
+            ui.add(egui::Slider::new(&mut self.model.flux.right, -1.0..=1.0).step_by(0.5).text("right side flux multi"));
 
-            ui.add(egui::Slider::new(&mut self.dx, 0.0..=10.0).logarithmic(true).text("value"));
+            ui.add(egui::Checkbox::new(&mut self.model.automax, "auto max"));
+            ui.add(egui::Slider::new(&mut self.model.max, -100.0..=100.0).text("display max"));
+            ui.add(egui::Slider::new(&mut self.model.max, -100.0..=100.0).text("display min"));
             /*if ui.button("Increment").clicked() {
                 self.value += 1.0;
             }*/
 
             ui.separator();
 
-            self.model.step(1, 0.1, 0.5, 0.005);
+            self.model.step(1, 0.5, 0.005);
             self.model.display(ui);
-            std::thread::sleep(Duration::from_secs_f64(1.005));
+            std::thread::sleep(Duration::from_secs_f64(0.005));
             ui.ctx().request_repaint();
 
             if ui.add(egui::Button::new("Print")).clicked() {
