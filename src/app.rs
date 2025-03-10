@@ -89,7 +89,7 @@ impl eframe::App for TemplateApp {
 
             self.model.step(1, 0.1, 0.5, 0.005);
             self.model.display(ui);
-            std::thread::sleep(Duration::from_secs_f64(0.005));
+            std::thread::sleep(Duration::from_secs_f64(1.005));
             ui.ctx().request_repaint();
 
             if ui.add(egui::Button::new("Print")).clicked() {
