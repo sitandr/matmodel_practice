@@ -6,7 +6,6 @@
 /// 
 /// interaction: 1/(f + 0.2) + 0.7
 
-use std::time::Duration;
 use evalexpr::EvalexprResult;
 
 use crate::model::{EquationType, Modelling};
@@ -28,7 +27,7 @@ pub struct TemplateApp {
     error: String,
     color_image: bool,
     steps_per_frame: usize,
-    pause_interval: f64
+    // pause_interval: f64
     // #[serde(skip)] // This how you opt-out of serialization of a field
 }
 
@@ -48,7 +47,7 @@ impl Default for TemplateApp {
             param_query: "1.0".to_owned(),
             color_image: false,
             steps_per_frame: 1,
-            pause_interval: 0.1
+            // pause_interval: 0.1
         }
     }
 }
@@ -184,7 +183,7 @@ impl eframe::App for TemplateApp {
 
             ui.add(egui::Checkbox::new(&mut self.color_image, "Colored output"));
             ui.add(egui::Slider::new(&mut self.steps_per_frame, 1..=50).text("Steps per frame"));
-            ui.add(egui::Slider::new(&mut self.pause_interval, 0.0..=1000.0).text("Sleep between frames, ms"));
+            // ui.add(egui::Slider::new(&mut self.pause_interval, 0.0..=1000.0).text("Sleep between frames, ms"));
             ui.add(egui::Checkbox::new(&mut self.pause, "Pause"));
 
             if ui.button("Save").clicked() {
@@ -203,7 +202,7 @@ impl eframe::App for TemplateApp {
             if !self.pause {
                 let err = self.model.step(self.steps_per_frame, self.dx, self.dt);
                 self.set_error(err);
-                std::thread::sleep(Duration::from_secs_f64(self.pause_interval * 0.001));
+                // std::thread::sleep(Duration::from_secs_f64(self.pause_interval * 0.001));
                 ui.ctx().request_repaint();
             }
             self.model.display(ui, self.color_image);

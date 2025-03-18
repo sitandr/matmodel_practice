@@ -36,6 +36,7 @@ env_logger = "0.11"
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 wasm-bindgen-futures = "0.4"
 web-sys = "0.3.70"           # to access the DOM (to hide the loading text)
+tracing-wasm = "0.2.1"
 
 [profile.release]
 opt-level = 2 # fast and small wasm
@@ -47,6 +48,10 @@ opt-level = 2
 
 
 [patch.crates-io]
+
+[dependencies.getrandom]
+version = "*"
+features = ["js"]
 
 # If you want to use the bleeding edge version of egui and eframe:
 # egui = { git = "https://github.com/emilk/egui", branch = "master" }
