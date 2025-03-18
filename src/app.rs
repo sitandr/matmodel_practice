@@ -154,8 +154,10 @@ impl eframe::App for TemplateApp {
                 }
             });
             
-
-            ui.add(egui::TextEdit::singleline(&mut self.f_query));
+            ui.horizontal(|ui| {
+                ui.label("Initial funtion");
+                ui.add(egui::TextEdit::singleline(&mut self.f_query));
+            });
 
             if ui.button("Fill by rule").clicked() {
                 let err = self.model.set_f(&self.f_query, self.dx);
