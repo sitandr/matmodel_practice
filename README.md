@@ -2,7 +2,7 @@
 
 A simple (but quite fast and vary customizable) wave/heat simulation. It's all yours to explore.
 
-The demo link: (todo).
+The demo [link](https://sitandr.github.io/matmodel_practice/) (use Desktop / Desktop mode for correct display).
 
 Docs about scripting language used for setting functions inside see [there](https://docs.rs/evalexpr/latest/evalexpr/index.html).
 
